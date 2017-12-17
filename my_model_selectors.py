@@ -78,7 +78,7 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         best_model = None
-        best_score = np.inf
+        best_score = float('inf')
 
         for components in range(self.min_n_components, self.max_n_components + 1):
             try:
@@ -111,7 +111,7 @@ class SelectorDIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         best_model = None
-        best_score = - np.inf
+        best_score = float('-inf')
 
         for components in range(self.min_n_components, self.max_n_components + 1):
             try:
@@ -140,7 +140,7 @@ class SelectorCV(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         best_model = None
-        best_score = - np.inf
+        best_score = float('-inf')
 
         for components in range(self.min_n_components, self.max_n_components + 1):
             try:
