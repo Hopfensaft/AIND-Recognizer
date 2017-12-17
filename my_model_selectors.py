@@ -66,6 +66,7 @@ class SelectorBIC(ModelSelector):
 
     http://www2.imm.dtu.dk/courses/02433/doc/ch6_slides.pdf
     Bayesian information criteria: BIC = -2 * logL + p * logN
+    p defined as
     """
 
     def select(self):
@@ -76,8 +77,24 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        best_model = None
+        best_score = np.inf
+
+        for components in range(self.min_n_components, self.max_n_components + 1):
+            try:
+                scored_model = self.base_model(components)
+
+                if scored_model:
+                    parameters = components ** 2 + 2 * components * self.X.shape[1] - 1
+                    score = -2 * scored_model.score(self.X, self.lengths) + parameters * np.log(len(self.X))
+
+                    if score < best_score:
+                        best_score = score
+                        best_model = scored_model
+            except:
+                pass
+
+        return best_model
 
 
 class SelectorDIC(ModelSelector):
@@ -93,8 +110,25 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        best_model = None
+        best_score = - np.inf
+
+        for components in range(self.min_n_components, self.max_n_components + 1):
+            try:
+                scored_model = self.base_model(components)
+
+                if scored_model:
+                    sum_other_scores = sum(scored_model.score(self.hwords[word][0], self.hwords[word][1])
+                                           for word in self.words if word != self.this_word)
+                    score = scored_model.score(self.X, self.lengths) - sum_other_scores
+
+                    if score > best_score:
+                        best_score = score
+                        best_model = scored_model
+            except:
+                pass
+
+        return best_model
 
 
 class SelectorCV(ModelSelector):
@@ -105,5 +139,28 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        best_model = None
+        best_score = - np.inf
+
+        for components in range(self.min_n_components, self.max_n_components + 1):
+            try:
+                cv_folds = KFold(n_splits=2)
+                test_scores = []
+
+                for cv_train_idx, cv_test_idx in cv_folds.split(self.sequences):
+                    X_train, lengths_train = combine_sequences(cv_train_idx, self.sequences)
+                    X_test, lengths_test = combine_sequences(cv_test_idx, self.sequences)
+                    scored_model = GaussianHMM(n_components=components, covariance_type="diag", n_iter=1000,
+                                                random_state=self.random_state, verbose=False).fit(X_train, lengths_train)
+
+                    if scored_model:
+                        test_scores.append(scored_model.score(X_test, lengths_test))
+
+                score = np.mean(test_scores)
+                if score > best_score:
+                    best_score = score
+                    best_model = scored_model
+            except:
+                pass
+
+        return best_model
